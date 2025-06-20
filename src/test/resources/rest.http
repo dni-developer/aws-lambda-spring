@@ -1,0 +1,16 @@
+### sayHello
+GET http://localhost:8080/sayHello
+
+
+### logMessage
+POST http://localhost:8080/logMessage
+Content-Type: text/plain
+
+Log this message
+
+
+### reverse
+POST http://localhost:8080/reverse
+Content-Type: text/plain
+
+apple
