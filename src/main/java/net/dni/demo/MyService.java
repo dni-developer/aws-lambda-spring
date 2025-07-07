@@ -1,12 +1,16 @@
 package net.dni.demo;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class MyService {
 
+    @Value("${HELLO_MESSAGE:missing HELLO_MESSAGE in environment variable}")
+    private String helloMessage;
+
     public String sayHello() {
-        return "Hello World!";
+        return helloMessage;
     }
 
     public void logMessage(String input) {
