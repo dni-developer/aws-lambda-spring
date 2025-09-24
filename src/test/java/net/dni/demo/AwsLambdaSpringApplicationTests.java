@@ -5,8 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -20,12 +19,23 @@ class AwsLambdaSpringApplicationTests {
     private TestRestTemplate testRestTemplate;
 
     @Test
-    void testSayHello() {
-        String url = "http://localhost:" + port + "/sayHello";
+    void testAccessDenied() {
+        String url = "http://localhost:" + port + "/myRole";
         ResponseEntity<String> response = testRestTemplate.getForEntity(url, String.class);
+        assertThat(response.getBody()).isEqualTo("Access Denied");
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK); //todo: local response should be 403
+    }
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo("Hello World!");
+    @Test
+    void testAdmin() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBasicAuth("admin", "password");
+        HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+
+        String url = "http://localhost:" + port + "/myRole";
+        ResponseEntity<String> response = testRestTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
+        assertThat(response.getBody()).isEqualTo("[ROLE_ADMIN]");
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK); //todo: local response should be 403
     }
 
 }

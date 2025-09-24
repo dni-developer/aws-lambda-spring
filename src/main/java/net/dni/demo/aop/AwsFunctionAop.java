@@ -8,9 +8,11 @@ import org.aspectj.lang.annotation.Aspect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -33,7 +35,11 @@ public class AwsFunctionAop {
             log.info("Before: {} {}", joinPoint.getSignature().getName(), joinPoint.getTarget());
             Object[] args = joinPoint.getArgs();
             if (args[0] instanceof Message message) {
-                String authHeader = message.getHeaders().get("authorization", String.class);
+                String authHeader = message.getHeaders().get("Authorization", String.class);
+                if (StringUtils.isBlank(authHeader)) {
+                    authHeader = message.getHeaders().get("authorization", String.class);
+                }
+
                 if (StringUtils.isBlank(authHeader)) {
                     log.info("No authorization header found");
                 } else {
@@ -54,9 +60,15 @@ public class AwsFunctionAop {
             }
 
             return joinPoint.proceed();
+        } catch (AuthenticationException e) {
+            return MessageBuilder.withPayload(e.getMessage()).setHeader("statusCode", 401).build();
+        } catch (AccessDeniedException e) {
+            return MessageBuilder.withPayload(e.getMessage()).setHeader("statusCode", 403).build();
         } catch (Exception e) {
             log.error("Exception caught in AOP:", e);
             return MessageBuilder.withPayload(e.getMessage()).setHeader("statusCode", 500).build();
+        } finally {
+            SecurityContextHolder.clearContext();
         }
     }
 
